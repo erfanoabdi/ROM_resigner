@@ -47,7 +47,7 @@ def sign(jar, certtype):
 
     signjarcmd = "java -jar " + signapkjar + " " + securitydir + "/" + certtype + ".x509.pem " + securitydir + "/" + certtype + ".pk8 " + jar + " " + jartmpdir + "/" + os.path.basename(jar)
 
-    movecmd = "mv " + jartmpdir + "/" + os.path.basename(jar) + " " + jar
+    movecmd = "mv -f " + jartmpdir + "/" + os.path.basename(jar) + " " + jar
     output = subprocess.check_output(['bash','-c', signjarcmd])
     output += subprocess.check_output(['bash','-c', movecmd])
     #print(output)
