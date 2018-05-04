@@ -1,14 +1,25 @@
 from xml.dom import minidom
-import re
-import os
-import mmap
-import subprocess
+import re, os, mmap, subprocess, fnmatch, argparse
 
 cwd = os.getcwd()
 
-romdir = "/Users/erfanabdi/GitHub/ROM_resigner/files"
+def find(pattern, path):
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if fnmatch.fnmatch(name, pattern):
+                return os.path.join(root, name)
+
+romdir = "/Users/erfanabdi/GitHub/208868/tmp/system"
 securitydir = "/Users/erfanabdi/GitHub/android_build/target/product/security"
-mac_permissions = "plat_mac_permissions.xml"
+
+parser = argparse.ArgumentParser(description="Python Script to resign an Android ROM using custom keys")
+parser.add_argument('RomDir', help='ROM Path')
+parser.add_argument('SecurityDir', help='Security Dir Path (just like https://android.googlesource.com/platform/build/+/master/target/product/security/)')
+args = parser.parse_args()
+args.RomDir = romdir
+args.SecurityDir = securitydir
+
+mac_permissions = find("*mac_permissions*", romdir + "/etc/selinux")
 
 xmldoc = minidom.parse(mac_permissions)
 itemlist = xmldoc.getElementsByTagName('signer')
@@ -84,3 +95,6 @@ for root, dirs, files in os.walk(romdir):
                 index += 1
             if index == certlen:
                 print(os.path.basename(jarfile) + " : Unknown => keeping signature")
+
+
+print ("#TODO resigning finished but you should take care of " + mac_permissions + " yourself")
