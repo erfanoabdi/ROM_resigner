@@ -9,15 +9,13 @@ def find(pattern, path):
             if fnmatch.fnmatch(name, pattern):
                 return os.path.join(root, name)
 
-romdir = "/Users/erfanabdi/GitHub/208868/tmp/system"
-securitydir = "/Users/erfanabdi/GitHub/android_build/target/product/security"
 
 parser = argparse.ArgumentParser(description="Python Script to resign an Android ROM using custom keys")
 parser.add_argument('RomDir', help='ROM Path')
 parser.add_argument('SecurityDir', help='Security Dir Path (just like https://android.googlesource.com/platform/build/+/master/target/product/security/)')
 args = parser.parse_args()
-args.RomDir = romdir
-args.SecurityDir = securitydir
+romdir = args.RomDir
+securitydir = args.SecurityDir
 
 mac_permissions = find("*mac_permissions*", romdir + "/etc/selinux")
 
@@ -42,9 +40,13 @@ def CheckCert(filetoopen, cert):
 
 def getcert(jar, out):
     extractjar = "jar -xvf " + jar
-    extractcert = "openssl pkcs7 -in "+ tmpdir + "/META-INF/CERT.RSA -print_certs -inform DER -out " + out
     output = subprocess.check_output(['bash','-c', extractjar])
-    output += subprocess.check_output(['bash','-c', extractcert])
+
+    if os.path.exists(tmpdir + "/META-INF/CERT.RSA"):
+        extractcert = "openssl pkcs7 -in "+ tmpdir + "/META-INF/CERT.RSA -print_certs -inform DER -out " + out
+        output = subprocess.check_output(['bash','-c', extractcert])
+        os.remove(tmpdir + "/META-INF/CERT.RSA")
+
     #print(output)
 
 def sign(jar, certtype):
@@ -63,6 +65,7 @@ def sign(jar, certtype):
     output += subprocess.check_output(['bash','-c', movecmd])
     #print(output)
     print(os.path.basename(jar) + " signed as " + seinfo)
+
 
 index = 0
 for s in itemlist:
@@ -85,16 +88,20 @@ for root, dirs, files in os.walk(romdir):
             os.chdir(tmpdir)
             
             out = "foo.cer"
-            getcert(jarfile, out)
+            if os.path.exists(out):
+                os.remove(out)
             
-            index = 0
-            for seinfo in seinfos:
-                if CheckCert(out, signatures64[index]):
-                    sign(jarfile, seinfo)
-                    break
-                index += 1
-            if index == certlen:
-                print(os.path.basename(jarfile) + " : Unknown => keeping signature")
-
+            getcert(jarfile, out)
+            if not os.path.exists(out):
+                print(file + " : No Siganture => Skip")
+            else:
+                index = 0
+                for seinfo in seinfos:
+                    if CheckCert(out, signatures64[index]):
+                        sign(jarfile, seinfo)
+                        break
+                    index += 1
+                if index == certlen:
+                        print(file + " : Unknown => keeping signature")
 
 print ("#TODO resigning finished but you should take care of " + mac_permissions + " yourself")
