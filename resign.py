@@ -1,5 +1,5 @@
 from xml.dom import minidom
-import re, os, mmap, subprocess, fnmatch, argparse
+import re, os, mmap, subprocess, fnmatch, argparse, fileinput
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -26,6 +26,7 @@ certlen = len(itemlist)
 signatures = []
 signatures64 = []
 seinfos = []
+usedseinfos = []
 
 tmpdir = cwd + "/tmp"
 signapkjar = cwd + "/signapk.jar"
@@ -65,7 +66,7 @@ def sign(jar, certtype):
     output += subprocess.check_output(['bash','-c', movecmd])
     #print(output)
     print(os.path.basename(jar) + " signed as " + seinfo)
-
+    usedseinfos.append(seinfo) if seinfo not in usedseinfos else usedseinfos
 
 index = 0
 for s in itemlist:
@@ -104,4 +105,14 @@ for root, dirs, files in os.walk(romdir):
                 if index == certlen:
                         print(file + " : Unknown => keeping signature")
 
-print ("#TODO resigning finished but you should take care of " + mac_permissions + " yourself")
+index = 0
+for s in itemlist:
+    oldsignature = s.attributes['signature'].value
+    seinfo = xmldoc.getElementsByTagName('seinfo')[index].attributes['value'].value
+    index += 1
+    if seinfo in usedseinfos:
+        pemtoder = "openssl x509 -outform der -in " + securitydir + "/" + seinfo + ".x509.pem"
+        output = subprocess.check_output(['bash','-c', pemtoder])
+        newsignature = output.encode("hex")
+        for line in fileinput.input(mac_permissions, inplace=True):
+            print line.replace(oldsignature, newsignature),
