@@ -1,7 +1,7 @@
 from xml.dom import minidom
 import re, os, mmap, subprocess, fnmatch, argparse
 
-cwd = os.getcwd()
+cwd = os.path.dirname(os.path.realpath(__file__))
 
 def find(pattern, path):
     for root, dirs, files in os.walk(path):
