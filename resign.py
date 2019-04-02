@@ -62,11 +62,14 @@ def sign(jar, certtype):
     signjarcmd = "java -jar " + signapkjar + " " + securitydir + "/" + certtype + ".x509.pem " + securitydir + "/" + certtype + ".pk8 " + jar + " " + jartmpdir + "/" + os.path.basename(jar)
 
     movecmd = "mv -f " + jartmpdir + "/" + os.path.basename(jar) + " " + jar
-    output = subprocess.check_output(['bash','-c', signjarcmd])
-    output += subprocess.check_output(['bash','-c', movecmd])
-    #print(output)
-    print(os.path.basename(jar) + " signed as " + seinfo)
-    usedseinfos.append(seinfo) if seinfo not in usedseinfos else usedseinfos
+    try:
+        output = subprocess.check_output(['bash','-c', signjarcmd])
+        output += subprocess.check_output(['bash','-c', movecmd])
+        #print(output)
+        print(os.path.basename(jar) + " signed as " + seinfo)
+        usedseinfos.append(seinfo) if seinfo not in usedseinfos else usedseinfos
+    except subprocess.CalledProcessError:
+        print("Signing " + os.path.basename(jar) + " failed")
 
 index = 0
 for s in itemlist:
