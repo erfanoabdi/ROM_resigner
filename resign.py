@@ -84,7 +84,7 @@ for s in itemlist:
 
 for root, dirs, files in os.walk(romdir):
     for file in files:
-        if file.endswith(".apk") or file.endswith(".jar"):
+        if file.endswith(".apk") or file.endswith(".jar") or file.endswith(".apex"):
             jarfile=os.path.join(root, file)
             
             if not os.path.exists(tmpdir):
