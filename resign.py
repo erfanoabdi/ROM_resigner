@@ -30,6 +30,8 @@ usedseinfos = []
 
 tmpdir = cwd + "/tmp"
 signapkjar = cwd + "/signapk.jar"
+os_info = os.uname()[0]
+signapklibs = cwd + "/" + os_info
 
 def CheckCert(filetoopen, cert):
     f = open(filetoopen)
@@ -59,7 +61,7 @@ def sign(jar, certtype):
     if not os.path.exists(jartmpdir):
         os.makedirs(jartmpdir)
 
-    signjarcmd = "java -jar " + signapkjar + " " + securitydir + "/" + certtype + ".x509.pem " + securitydir + "/" + certtype + ".pk8 " + jar + " " + jartmpdir + "/" + os.path.basename(jar)
+    signjarcmd = "java -XX:+UseCompressedOops -Xms2g -Xmx2g -Djava.library.path=" + signapklibs + " -jar " + signapkjar + " " + securitydir + "/" + certtype + ".x509.pem " + securitydir + "/" + certtype + ".pk8 " + jar + " " + jartmpdir + "/" + os.path.basename(jar)
 
     movecmd = "mv -f " + jartmpdir + "/" + os.path.basename(jar) + " " + jar
     try:
