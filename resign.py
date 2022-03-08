@@ -1,5 +1,7 @@
 from xml.dom import minidom
 import re, os, mmap, subprocess, fnmatch, argparse, fileinput
+import codecs
+import binascii
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -54,9 +56,9 @@ def getcert(jar, out):
 
 def sign(jar, certtype):
     if not os.path.exists(securitydir + "/" + certtype + ".pk8"):
-        print(certtype + ".pk8 not found in security dir")
+        print((certtype + ".pk8 not found in security dir"))
         return False
-    
+
     jartmpdir = tmpdir + "/JARTMP"
     if not os.path.exists(jartmpdir):
         os.makedirs(jartmpdir)
@@ -68,17 +70,17 @@ def sign(jar, certtype):
         output = subprocess.check_output(['bash','-c', signjarcmd])
         output += subprocess.check_output(['bash','-c', movecmd])
         #print(output)
-        print(os.path.basename(jar) + " signed as " + seinfo)
+        print((os.path.basename(jar) + " signed as " + seinfo))
         usedseinfos.append(seinfo) if seinfo not in usedseinfos else usedseinfos
     except subprocess.CalledProcessError:
-        print("Signing " + os.path.basename(jar) + " failed")
+        print(("Signing " + os.path.basename(jar) + " failed"))
 
 index = 0
 for s in itemlist:
     signatures.append(s.attributes['signature'].value)
-    test64 = s.attributes['signature'].value.decode("hex").encode("base64")
-    test64 = test64.decode('utf-8').replace('\n', '')
-    
+    test64 = codecs.encode(codecs.decode(s.attributes['signature'].value, 'hex'), 'base64').decode()
+    test64 = test64.replace('\n', '')
+
     signatures64.append(re.sub("(.{64})", "\\1\n", test64, 0, re.DOTALL))
 
     seinfos.append(xmldoc.getElementsByTagName('seinfo')[index].attributes['value'].value)
@@ -88,27 +90,27 @@ for root, dirs, files in os.walk(romdir):
     for file in files:
         if file.endswith(".apk") or file.endswith(".jar") or file.endswith(".apex"):
             jarfile=os.path.join(root, file)
-            
+
             if not os.path.exists(tmpdir):
                 os.makedirs(tmpdir)
             os.chdir(tmpdir)
-            
+
             out = "foo.cer"
             if os.path.exists(out):
                 os.remove(out)
-            
+
             getcert(jarfile, out)
             if not os.path.exists(out):
-                print(file + " : No Siganture => Skip")
+                print((file + " : No Siganture => Skip"))
             else:
                 index = 0
                 for seinfo in seinfos:
-                    if CheckCert(out, signatures64[index]):
+                    if CheckCert(out, signatures64[index].encode()):
                         sign(jarfile, seinfo)
                         break
                     index += 1
                 if index == certlen:
-                        print(file + " : Unknown => keeping signature")
+                    print((file + " : Unknown => keeping signature"))
 
 index = 0
 for s in itemlist:
@@ -118,6 +120,6 @@ for s in itemlist:
     if seinfo in usedseinfos:
         pemtoder = "openssl x509 -outform der -in " + securitydir + "/" + seinfo + ".x509.pem"
         output = subprocess.check_output(['bash','-c', pemtoder])
-        newsignature = output.encode("hex")
+        newsignature = output.hex()
         for line in fileinput.input(mac_permissions, inplace=True):
-            print line.replace(oldsignature, newsignature),
+            print(line.replace(oldsignature, newsignature), end=' ')
