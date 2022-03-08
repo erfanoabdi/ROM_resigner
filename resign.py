@@ -45,7 +45,9 @@ def CheckCert(filetoopen, cert):
 
 def getcert(jar, out):
     extractjar = "7z e " + jar + " META-INF/CERT.RSA -o" + tmpdir
-    output = subprocess.check_output(['bash','-c', extractjar])
+    x = subprocess.run(['7z', 't', jar], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if x.returncode == 0:
+        output = subprocess.check_output(['bash','-c', extractjar])
 
     if os.path.exists(tmpdir + "/CERT.RSA"):
         extractcert = "openssl pkcs7 -in "+ tmpdir + "/CERT.RSA -print_certs -inform DER -out " + out
